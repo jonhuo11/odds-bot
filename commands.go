@@ -82,7 +82,7 @@ var (
 						},
 						{
 							Name:        "moneyline",
-							Description: "what % of your bet you get back if you win; neg = favourite, postive = underdog",
+							Description: "what % of your bet you get back if you win; neg = favourite, positive = underdog",
 							Type:        discordgo.ApplicationCommandOptionInteger,
 							Required:    true,
 						},

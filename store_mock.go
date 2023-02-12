@@ -69,6 +69,9 @@ func (s *mockStore) setOdds(owner string, odds Odds) error {
 	}
 
 	s.odds[owner][odds.name] = &odds
+	if s.odds[owner][odds.name].options == nil {
+		s.odds[owner][odds.name].options = make(map[string]*OddsOption)
+	}
 
 	s.oddsIds[uuid.New().String()] = s.odds[owner][odds.name]
 

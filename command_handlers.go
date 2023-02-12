@@ -80,6 +80,7 @@ func oddsHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				break
 			}
 			res = "Deleted odds game " + gamename.StringValue()
+			break
 		}
 		res = "An error occurred"
 
@@ -98,6 +99,7 @@ func oddsHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 					break
 				}
 				res = "Deleted option " + choice.StringValue() + " from odds game " + gamename.StringValue()
+				break
 			}
 		}
 
@@ -124,7 +126,14 @@ func oddsHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				opt := o.options[i]
 				opts += "\n- " + opt.name + fmt.Sprintf(" (%v)", opt.moneyline)
 			}
-			res = fmt.Sprintf("**Game name:** %v\n**Created by:** <@%v>\n**Options:** %v\n**Winner:** %v\n", o.name, i.Member.User.ID, opts, o.winner)
+			var winner = "Undecided"
+			if o.winner != "" {
+				winner = o.winner
+			}
+			res = fmt.Sprintf(
+				"**Game name:** %v\n**Created by:** <@%v>\n**Options:** %v\n**Winner:** %v\n",
+				o.name, i.Member.User.ID, opts, winner,
+			)
 			break
 		}
 		res = "An error occurred"
@@ -171,7 +180,7 @@ func walletHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 func betHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	//om := makeOptsMap(i.ApplicationCommandData().Options)
 	res := ""
-
+	// TODO
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
