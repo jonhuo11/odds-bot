@@ -60,6 +60,16 @@ func (s *mockStore) getOdds(owner, name string) (*Odds, error) {
 	return v, nil
 }
 
+func (s *mockStore) getOddsFromId(id string) (*Odds, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	v, e := s.oddsIds[id]
+	if !e {
+		return nil, sql.ErrNoRows
+	}
+	return v, nil
+}
+
 func (s *mockStore) setOdds(owner string, odds Odds) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -73,7 +83,14 @@ func (s *mockStore) setOdds(owner string, odds Odds) error {
 		s.odds[owner][odds.name].options = make(map[string]*OddsOption)
 	}
 
-	s.oddsIds[uuid.New().String()] = s.odds[owner][odds.name]
+	id := uuid.New().String()
+	if odds.id != "" {
+		id = odds.id
+	}
+	s.oddsIds[id] = s.odds[owner][odds.name]
+	s.oddsIds[id].id = id
+
+	s.oddsIds[id].owner = owner
 
 	return nil
 }
@@ -123,4 +140,21 @@ func (s *mockStore) getOddsOpt(owner string, gamename string, optname string) (*
 		return nil, sql.ErrNoRows
 	}
 	return o, nil
+}
+
+func (s *mockStore) setBet(better string, gameid string, optname string, amount int) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if odds, e := s.oddsIds[gameid]; e {
+		if odds.bets == nil {
+			odds.bets = make(map[string]*OddsBet)
+		}
+		odds.bets[better] = &OddsBet{
+			betterid: better,
+			amt:      amount,
+			option:   odds.options[optname],
+		}
+		return nil
+	}
+	return sql.ErrNoRows
 }

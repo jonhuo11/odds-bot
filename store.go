@@ -6,15 +6,19 @@ type store interface {
 	setWalletDelta(id string, amt int) error
 
 	getOdds(owner string, name string) (*Odds, error)
+	getOddsFromId(id string) (*Odds, error)
 	setOdds(owner string, odds Odds) error
 	delOdds(owner string, gamename string) error
 	setOddsOpt(owner string, gamename string, opt OddsOption) error
 	getOddsOpt(owner string, gamename string, optname string) (*OddsOption, error)
 	delOddsOpt(owner, gamename, optionname string) error
+
+	setBet(better string, gameid string, optname string, amount int) error
 }
 
 type Odds struct {
 	name    string
+	owner   string
 	id      string
 	options map[string]*OddsOption
 	bets    map[string]*OddsBet // discord id --> bet --> option

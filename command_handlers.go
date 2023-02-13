@@ -7,6 +7,25 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+// moneyline is converted to percentage
+// moneyline = 100 ==> reward = bet
+// moneyline = -100 ==> reward = bet
+// moneyline = -150 ==> reward = bet * (-1/moneyline/100)
+// moneyline be
+func calculateWinnings(bet, moneyline int) int {
+	ml := float64(moneyline)
+	b := float64(bet)
+	if ml < -100 {
+		m := (ml / 100) * -1
+		return int(b * (1 / m))
+	}
+	if ml > 100 {
+		m := ml / 100
+		return int(b * m)
+	}
+	return 0 // you cannot have a moneyline between -100 and 100
+}
+
 // odds new name
 // odds add game choice moneyline
 // odds info game
@@ -59,8 +78,15 @@ func oddsHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 			if choice, ok := om["choice"]; ok {
 				if moneyline, ok := om["moneyline"]; ok {
+					// moneyline must not be between -100 and 100
+					moneylineInt := moneyline.IntValue()
+					if moneylineInt > -100 && moneylineInt < 100 {
+						res = "Moneyline cannot be between -100 and 100"
+						break
+					}
+
 					newOddsOpt.name = choice.StringValue()
-					newOddsOpt.moneyline = int(moneyline.IntValue())
+					newOddsOpt.moneyline = int(moneylineInt)
 					storeDao.setOddsOpt(i.Member.User.ID, gameName.StringValue(), newOddsOpt)
 
 					res = fmt.Sprintf("Added option %v (%v) to odds game %v", newOddsOpt.name, newOddsOpt.moneyline, gameName.StringValue())
@@ -126,13 +152,18 @@ func oddsHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				opt := o.options[i]
 				opts += "\n- " + opt.name + fmt.Sprintf(" (%v)", opt.moneyline)
 			}
+			betters := ""
+			for i := range o.bets {
+				b := o.bets[i]
+				betters += "\n- " + "<@" + b.betterid + ">"
+			}
 			var winner = "Undecided"
 			if o.winner != "" {
 				winner = o.winner
 			}
 			res = fmt.Sprintf(
-				"**Game name:** %v\n**Created by:** <@%v>\n**Options:** %v\n**Winner:** %v\n",
-				o.name, i.Member.User.ID, opts, winner,
+				"**Game name:** %v\n**Game ID:** %v\n**Created by:** <@%v>\n**Options:** %v\n**Betters:** %v\n**Winner:** %v\n",
+				o.name, o.id, i.Member.User.ID, opts, betters, winner,
 			)
 			break
 		}
@@ -157,8 +188,8 @@ func walletHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		amt, err := storeDao.getWallet(i.Member.User.ID)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				storeDao.setWallet(i.Member.User.ID, 100) // new users get 100 coins
-				res = fmt.Sprintf("New user detected, have %v counts on the house", amt)
+				storeDao.setWallet(i.Member.User.ID, 1000) // new users get 1000 coins
+				res = fmt.Sprintf("New user detected, have %v coins on the house", 1000)
 			} else {
 				res = err.Error()
 			}
@@ -176,11 +207,89 @@ func walletHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	})
 }
 
-// bet
+// bet make id option amount
+// bet del id option
 func betHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	//om := makeOptsMap(i.ApplicationCommandData().Options)
+	options := i.ApplicationCommandData().Options
 	res := ""
-	// TODO
+	switch options[0].Name {
+	case "make":
+		om := makeOptsMap(options[0].Options)
+		if id, ok := om["id"]; ok {
+			if opt := om["option"]; ok {
+				if amt := om["amount"]; ok {
+					// bet amount must be positive
+					if amt.IntValue() < 0 {
+						res = "You cannot place a negative bet"
+						break
+					}
+					// check if option exists, and if user has enough coins
+					var balance int
+					var err error
+					var newUserMsg string
+					if balance, err = storeDao.getWallet(i.Member.User.ID); err != nil {
+						if err == sql.ErrNoRows {
+							newUserMsg = "New user detected, granting 1000 coins on the house. "
+							// grant 1000 coins on house
+							if err := storeDao.setWallet(i.Member.User.ID, 1000); err != nil {
+								res = err.Error()
+								break
+							}
+							balance = 1000
+						} else {
+							res = err.Error()
+							break
+						}
+					}
+					if balance < int(amt.IntValue()) {
+						res = "You do not have enough coins to place this bet"
+						break
+					}
+
+					// get the odds from id
+					var moneyline int
+					if odds, err := storeDao.getOddsFromId(id.StringValue()); err != nil {
+						if err == sql.ErrNoRows {
+							res = "No odds game with this id exists"
+							break
+						}
+						res = err.Error()
+						break
+					} else {
+						if oddsopt, err := storeDao.getOddsOpt(odds.owner, odds.name, opt.StringValue()); err != nil {
+							if err == sql.ErrNoRows {
+								res = "No option with this name exists under this game id"
+								break
+							}
+							res = err.Error()
+							break
+						} else {
+							moneyline = oddsopt.moneyline
+						}
+					}
+					// set the bet
+					if err := storeDao.setBet(i.Member.User.ID, id.StringValue(), opt.StringValue(), int(amt.IntValue())); err != nil {
+						res = "An error occurred when setting the bet: " + err.Error()
+						break
+					}
+					// subtract from wallet
+					if err := storeDao.setWalletDelta(i.Member.User.ID, int(-1*amt.IntValue())); err != nil {
+						res = err.Error()
+						break
+					}
+					res = fmt.Sprintf(
+						"%vMade a %v coin bet on '%v', your new coin balance is %v. If you win this bet, you will gain %v coins!",
+						newUserMsg, amt.IntValue(), opt.StringValue(), int(balance-int(amt.IntValue())), calculateWinnings(int(amt.IntValue()), moneyline),
+					)
+					break
+				}
+			}
+		}
+		res = "An error occurred"
+	default:
+		res = "An error occurred"
+	}
+
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
