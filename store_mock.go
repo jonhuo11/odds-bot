@@ -247,3 +247,14 @@ func (s *mockStore) calculateWinnings(betId string) (int, error) {
 	}
 	return 0, sql.ErrNoRows
 }
+
+func (s *mockStore) setOddsStarted(gameId string, started bool) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, e := s.odds[gameId]
+	if e {
+		s.odds[gameId].started = started
+		return nil
+	}
+	return sql.ErrNoRows
+}

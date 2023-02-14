@@ -157,6 +157,26 @@ func oddsHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	*/
 	case "start":
 		// allows users to start betting on this odds game
+		om := makeOptsMap(options[0].Options)
+		if game, ok := om["game"]; ok {
+			// check existence
+			if o, err := storeDao.getOdds(i.Member.User.ID, game.StringValue()); err != nil {
+				if err == sql.ErrNoRows {
+					res = "No game with this name and registered under your account was found"
+					break
+				}
+				res = err.Error()
+				break
+			} else {
+				if err := storeDao.setOddsStarted(o.id, true); err != nil {
+					res = err.Error()
+					break
+				} else {
+					res = "Successfully started game " + o.name
+					break
+				}
+			}
+		}
 		res = "An error occurred"
 
 	case "info":
@@ -201,6 +221,24 @@ func oddsHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			)
 			break
 		}
+		res = "An error occurred"
+
+	case "close":
+		// close the betting and award players coins
+		// close game optname
+		// TODO add voting for betters to validate win
+
+		om := makeOptsMap(options[0].Options)
+		if _, ok := om["game"]; ok {
+			if _, ok := om["optname"]; ok {
+				// TODO
+				// assert game and option exist, and option exists under game
+
+				// reward players with proper points
+
+			}
+		}
+
 		res = "An error occurred"
 
 	default:
@@ -336,6 +374,11 @@ func betHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 							res = err.Error()
 							break
 						} else {
+							// the game must be started to proceed
+							if !odds.started {
+								res = "This game has not started yet, bets cannot be placed"
+								break
+							}
 							moneyline = oddsopt.moneyline
 							optid = oddsopt.id
 						}
@@ -389,7 +432,7 @@ func helpHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	helpMsg := `**How to use this bot:**
 
 A moneyline odds game has X number of outcomes to bet on, where each outcome is associated with a moneyline value.
-Players can bet any amount of coins on any amount of outcomes in a game, but only one outcome can win.
+Players can bet any amount of coins on any amount of outcomes in a game, but only one outcome can be the final result.
 
 The moneyline represents how likely the betmaster (person who created the odds game) thinks each outcome will occur.
 The moneyline value cannot be between -100 and 100. A negative moneyline value means the outcome is favoured, meaning the
@@ -399,7 +442,11 @@ not favoured, meaning the betmaster thinks the outcome is likely not going to ha
 Betting on a unfavoured outcome will yield more in winnings if the event occurs, however this potential is offset by the inherent unlikelihood of the event.
 Betting on a favoured outcome yields less in winnings if the event occurs, however this potential is enhanced by the inherently high likelihood of the event.
 
-Pick your strategy wisely!
+If moneyline < -100 then reward = bet * 1/(moneyline/100)
+If moneyline > 100 then reward = bet * moneyline/100
+Your original bet amount is obviously also refunded to you if you win.
+
+Pick your strategy wisely and have fun!
 `
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,

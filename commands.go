@@ -116,6 +116,25 @@ var (
 					Type: discordgo.ApplicationCommandOptionSubCommand,
 					// TODO add option for getting info about other people's games
 				},
+				{
+					Name:        "close",
+					Description: "end this game and award the winners",
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Name:        "game",
+							Description: "the name of the odds game to close",
+							Type:        discordgo.ApplicationCommandOptionString,
+							Required:    true,
+						},
+						{
+							Name:        "optname",
+							Description: "the name of the odds game to close",
+							Type:        discordgo.ApplicationCommandOptionString,
+							Required:    true,
+						},
+					},
+					// TODO add voting for betters to approve the award
+				},
 			},
 		},
 

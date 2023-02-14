@@ -10,6 +10,7 @@ type store interface {
 	getOdds(ownerId string, gameName string) (OddsModel, error)
 	getOddsFromId(gameId string) (OddsModel, error)
 	setOdds(odds OddsModel) error
+	setOddsStarted(gameId string, started bool) error
 
 	setOddsOpt(opt OddsOptionModel) error
 	getOddsOptFromId(optionId string) (OddsOptionModel, error)
