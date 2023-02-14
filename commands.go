@@ -29,41 +29,41 @@ var (
 					},
 					Type: discordgo.ApplicationCommandOptionSubCommand,
 				},
-
-				{
-					Name:        "del",
-					Description: "deletes a game of odds",
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Name:        "name",
-							Description: "name of the odds game to delete",
-							Type:        discordgo.ApplicationCommandOptionString,
-							Required:    true,
+				/*
+					{
+						Name:        "del",
+						Description: "deletes a game of odds",
+						Options: []*discordgo.ApplicationCommandOption{
+							{
+								Name:        "name",
+								Description: "name of the odds game to delete",
+								Type:        discordgo.ApplicationCommandOptionString,
+								Required:    true,
+							},
 						},
+						Type: discordgo.ApplicationCommandOptionSubCommand,
 					},
-					Type: discordgo.ApplicationCommandOptionSubCommand,
-				},
 
-				{
-					Name:        "delchoice",
-					Description: "deletes a bet choice from a game of odds",
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Name:        "game",
-							Description: "game to delete option from",
-							Type:        discordgo.ApplicationCommandOptionString,
-							Required:    true,
+					{
+						Name:        "delchoice",
+						Description: "deletes a bet choice from a game of odds",
+						Options: []*discordgo.ApplicationCommandOption{
+							{
+								Name:        "game",
+								Description: "game to delete option from",
+								Type:        discordgo.ApplicationCommandOptionString,
+								Required:    true,
+							},
+							{
+								Name:        "choice",
+								Description: "name of bet choice to delete",
+								Type:        discordgo.ApplicationCommandOptionString,
+								Required:    true,
+							},
 						},
-						{
-							Name:        "choice",
-							Description: "name of bet choice to delete",
-							Type:        discordgo.ApplicationCommandOptionString,
-							Required:    true,
-						},
+						Type: discordgo.ApplicationCommandOptionSubCommand,
 					},
-					Type: discordgo.ApplicationCommandOptionSubCommand,
-				},
-
+				*/
 				{
 					Name:        "add",
 					Description: "add a choice to your odds game",
@@ -150,24 +150,31 @@ var (
 					},
 				},
 				{
-					Name:        "del",
-					Description: "delete a bet",
+					Name:        "list",
+					Description: "list all active bets",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Name:        "id",
-							Description: "the id of the odds game betted on",
-							Type:        discordgo.ApplicationCommandOptionString,
-							Required:    true,
-						},
-						{
-							Name:        "option",
-							Description: "the name of the option to betted on",
-							Type:        discordgo.ApplicationCommandOptionString,
-							Required:    true,
+				},
+				/*
+					{
+						Name:        "del",
+						Description: "delete a bet",
+						Type:        discordgo.ApplicationCommandOptionSubCommand,
+						Options: []*discordgo.ApplicationCommandOption{
+							{
+								Name:        "id",
+								Description: "the id of the odds game betted on",
+								Type:        discordgo.ApplicationCommandOptionString,
+								Required:    true,
+							},
+							{
+								Name:        "option",
+								Description: "the name of the option to betted on",
+								Type:        discordgo.ApplicationCommandOptionString,
+								Required:    true,
+							},
 						},
 					},
-				},
+				*/
 			},
 		},
 

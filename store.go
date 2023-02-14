@@ -1,37 +1,51 @@
 package main
 
 type store interface {
-	getWallet(id string) (int, error)
-	setWallet(id string, amt int) error
-	setWalletDelta(id string, amt int) error
+	getWallet(ownerId string) (Wallet, error)
+	setWallet(w Wallet) error
+	updateWalletDelta(ownerId string, amt int) error
 
-	getOdds(owner string, name string) (*Odds, error)
-	getOddsFromId(id string) (*Odds, error)
-	setOdds(owner string, odds Odds) error
-	delOdds(owner string, gamename string) error
-	setOddsOpt(owner string, gamename string, opt OddsOption) error
-	getOddsOpt(owner string, gamename string, optname string) (*OddsOption, error)
-	delOddsOpt(owner, gamename, optionname string) error
+	getOdds(ownerId string, gameName string) (OddsModel, error)
+	getOddsFromId(gameId string) (OddsModel, error)
+	setOdds(odds OddsModel) error
 
-	setBet(better string, gameid string, optname string, amount int) error
+	setOddsOpt(opt OddsOptionModel) error
+	getOddsOptFromId(optionId string) (OddsOptionModel, error)
+	getOddsOptFromGameIdAndName(gameId, optName string) (OddsOptionModel, error)
+	// list of all options belonging to a game
+	getOddsOptsForGame(gameId string) ([]OddsOptionModel, error)
+
+	setBet(bet OddsBetModel) error
+	getBetsForUser(id string) ([]OddsBetModel, error)
+	getBetsForGame(gameId string) ([]OddsBetModel, error)
+
+	calculateWinnings(betId string) (int, error)
 }
 
-type Odds struct {
-	name    string
-	owner   string
+// models exactly represent rows in sql
+type Wallet struct {
+	ownerId string
+	balance int
+}
+
+type OddsModel struct {
 	id      string
-	options map[string]*OddsOption
-	bets    map[string]*OddsBet // discord id --> bet --> option
+	name    string
+	ownerId string
+	started bool
 	winner  string
 }
 
-type OddsOption struct {
+type OddsOptionModel struct {
+	id        string
+	gameId    string
 	name      string
 	moneyline int
 }
 
-type OddsBet struct {
-	betterid string
-	amt      int
-	option   *OddsOption
+type OddsBetModel struct {
+	id       string
+	ownerId  string
+	optionId string
+	amount   int
 }
