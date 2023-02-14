@@ -195,6 +195,10 @@ var (
 			Name:        "ping",
 			Description: "health check",
 		},
+		{
+			Name:        "help",
+			Description: "how does this game work?",
+		},
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -202,6 +206,7 @@ var (
 		"wallet": walletHandler,
 		"ping":   pingHandler,
 		"bet":    betHandler,
+		"help":   helpHandler,
 	}
 )
 

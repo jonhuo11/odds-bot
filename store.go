@@ -1,6 +1,8 @@
 package main
 
 type store interface {
+	cleanup() // dumps data to disk
+
 	getWallet(ownerId string) (Wallet, error)
 	setWallet(w Wallet) error
 	updateWalletDelta(ownerId string, amt int) error

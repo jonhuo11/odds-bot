@@ -17,6 +17,7 @@ func main() {
 	}
 
 	storeDao, err = newMockStore()
+	defer storeDao.cleanup()
 	if err != nil {
 		log.Panic(err)
 	}

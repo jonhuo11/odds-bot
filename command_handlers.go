@@ -85,9 +85,20 @@ func oddsHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			}
 			newOddsOpt.gameId = game.id
 
-			// TODO check for existing choice with this name, do not allow duplicates
-
 			if choice, ok := om["choice"]; ok {
+				// check for existing choice with this name, do not allow duplicates
+				if existing, err := storeDao.getOddsOptsForGame(game.id); err != nil {
+					res = err.Error()
+					break
+				} else {
+					for _, c := range existing {
+						if c.name == choice.StringValue() {
+							res = "Choice with same name already exists"
+							break
+						}
+					}
+				}
+
 				if moneyline, ok := om["moneyline"]; ok {
 					// moneyline must not be between -100 and 100
 					moneylineInt := moneyline.IntValue()
@@ -185,8 +196,8 @@ func oddsHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				winner = oddsGame.winner
 			}
 			res = fmt.Sprintf(
-				"**Game name:** %v\n**Game ID:** %v\n**Created by:** <@%v>\n**Options:** %v\n**Betters:** %v\n**Winner:** %v\n",
-				oddsGame.name, oddsGame.id, i.Member.User.ID, opts, betters, winner,
+				"**Game name:** %v\n**Game ID:** %v\n**Created by:** <@%v>\n**Options:** %v\n**Started:** %v\n**Betters:** %v\n**Winner:** %v\n",
+				oddsGame.name, oddsGame.id, i.Member.User.ID, opts, oddsGame.started, betters, winner,
 			)
 			break
 		}
@@ -263,7 +274,7 @@ func betHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				break
 			}
 			res += fmt.Sprintf(
-				"\n- %v coin bet on the outcome '%v' in game '%v', with a potential payout of %v",
+				"\n- %v coin bet on the outcome '%v' for game '%v', with a potential payout of %v",
 				betItem.amount, betOption.name, betGame.name, winnings,
 			)
 		}
@@ -369,7 +380,31 @@ func pingHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: "pong",
+			Content: "pong!",
+		},
+	})
+}
+
+func helpHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	helpMsg := `**How to use this bot:**
+
+A moneyline odds game has X number of outcomes to bet on, where each outcome is associated with a moneyline value.
+Players can bet any amount of coins on any amount of outcomes in a game, but only one outcome can win.
+
+The moneyline represents how likely the betmaster (person who created the odds game) thinks each outcome will occur.
+The moneyline value cannot be between -100 and 100. A negative moneyline value means the outcome is favoured, meaning the
+betmaster thinks it is more likely to be the actual outcome. A positive moneyline value means the outcome is
+not favoured, meaning the betmaster thinks the outcome is likely not going to happen.
+
+Betting on a unfavoured outcome will yield more in winnings if the event occurs, however this potential is offset by the inherent unlikelihood of the event.
+Betting on a favoured outcome yields less in winnings if the event occurs, however this potential is enhanced by the inherently high likelihood of the event.
+
+Pick your strategy wisely!
+`
+	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: helpMsg,
 		},
 	})
 }
